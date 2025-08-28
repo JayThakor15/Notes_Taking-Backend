@@ -13,7 +13,7 @@ const googleAuth = async (
   req: import("express").Request,
   res: import("express").Response
 ) => {
-  const { idToken } = req.body;
+  const { idToken, userData } = req.body;
   if (!idToken) {
     return res.status(400).json({ error: "ID token required" });
   }
@@ -30,10 +30,25 @@ const googleAuth = async (
         .json({ error: "Email not found in Google account" });
     }
     let user = await User.findOne({ email });
+
     if (!user) {
-      user = new User({ email });
-      await user.save();
+      // Create new user with Google data
+      user = new User({
+        email,
+        name: userData?.name || payload?.name,
+        picture: userData?.picture || payload?.picture,
+        // We can save other Google profile data here
+      });
+    } else {
+      // Update existing user's data if needed
+      if (!user.name && (userData?.name || payload?.name)) {
+        user.name = userData?.name || payload?.name;
+      }
+      if (userData?.picture || payload?.picture) {
+        user.picture = userData?.picture || payload?.picture;
+      }
     }
+    await user.save();
     // Create JWT
     if (!process.env.JWT_SECRET) {
       throw new Error("JWT_SECRET is not defined in environment variables.");
@@ -45,7 +60,7 @@ const googleAuth = async (
     );
     user.jwt = token;
     await user.save();
-    return res.status(200).json({ token, user: { email: user.email } });
+    return res.status(200).json({ token, user: { email: user.email, name: user.name } });
   } catch (err) {
     return res.status(401).json({ error: "Google authentication failed" });
   }

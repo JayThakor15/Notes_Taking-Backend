@@ -14,6 +14,10 @@ const userSchema = new mongoose.Schema(
       lowercase: true,
       trim: true,
     },
+    picture: {
+      type: String,
+      required: false,
+    },
     dob: {
       type: Date,
       required: false, // Made optional - will be set after OTP verification
