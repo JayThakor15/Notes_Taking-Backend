@@ -60,7 +60,9 @@ const googleAuth = async (
     );
     user.jwt = token;
     await user.save();
-    return res.status(200).json({ token, user: { email: user.email, name: user.name } });
+    return res
+      .status(200)
+      .json({ token, user: { email: user.email, name: user.name } });
   } catch (err) {
     return res.status(401).json({ error: "Google authentication failed" });
   }
@@ -218,9 +220,50 @@ const verifyOtp = async (
   }
 };
 
+// Resend OTP
+const resendOtp = async (
+  req: import("express").Request,
+  res: import("express").Response
+) => {
+  const { email } = req.body;
+  if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+    return res.status(400).json({ error: "Invalid email" });
+  }
+
+  try {
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Generate new OTP
+    const otp = generateOTP();
+    const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 min
+
+    // Update user with new OTP
+    user.otp = otp;
+    user.otpExpires = otpExpires;
+    await user.save();
+
+    // Send new OTP via email
+    const emailSent = await sendOTPEmail(email, otp);
+    if (!emailSent) {
+      return res.status(500).json({ error: "Failed to send OTP email" });
+    }
+
+    return res.status(200).json({
+      message: "New OTP sent to your email",
+      email: user.email,
+    });
+  } catch (err) {
+    return res.status(500).json({ error: "Failed to resend OTP" });
+  }
+};
+
 export default {
   googleAuth,
   login,
   signup,
   verifyOtp,
+  resendOtp,
 };
