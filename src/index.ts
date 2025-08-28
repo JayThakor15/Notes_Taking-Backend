@@ -1,15 +1,24 @@
-const express = require("express");
-const cors = require("cors");
-const dotenv = require("dotenv");
-const mongoose = require("mongoose");
-const authRoutes = require("./routes/auth.routes.ts");
+import express from "express";
+import type { Request, Response } from "express";
+import cors from "cors";
+import dotenv from "dotenv";
+dotenv.config();
+import mongoose from "mongoose";
+// If './routes/auth.routes' exports a default router, use:
+import authRoutes from "./routes/auth.routes.js";
+// If it exports named exports, use:
+// import { routerName } from "./routes/auth.routes";
 
 const app = express();
 
-app.use(cors());
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    credentials: true,
+  })
+);
 app.use(express.json());
 
-dotenv.config();
 
 mongoose
   .connect(process.env.MONGO_URL || "")
@@ -20,14 +29,11 @@ mongoose
     console.error("Error connecting to MongoDB:", err);
   });
 
-app.get(
-  "/",
-  (req: import("express").Request, res: import("express").Response) => {
-    res.send("Hello World!");
-  }
-);
-app.use("/api/auth", authRoutes);
+app.get("/", (req: Request, res: Response) => {
+  res.send("Hello World!");
+});
 
+app.use("/api/auth", authRoutes);
 
 app.listen(3000, () => {
   console.log("Server is running on port 3000");
