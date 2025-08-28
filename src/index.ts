@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
 const mongoose = require("mongoose");
+const authRoutes = require("./routes/auth.routes.ts");
 
 const app = express();
 
@@ -25,6 +26,8 @@ app.get(
     res.send("Hello World!");
   }
 );
+app.use("/api/auth", authRoutes);
+
 
 app.listen(3000, () => {
   console.log("Server is running on port 3000");
