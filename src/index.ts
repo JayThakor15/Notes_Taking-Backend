@@ -6,6 +6,7 @@ dotenv.config();
 import mongoose from "mongoose";
 // If './routes/auth.routes' exports a default router, use:
 import authRoutes from "./routes/auth.routes.js";
+import notesRoutes from "./routes/notes.routes.js";
 // If it exports named exports, use:
 // import { routerName } from "./routes/auth.routes";
 
@@ -34,6 +35,8 @@ app.get("/", (req: Request, res: Response) => {
 });
 
 app.use("/api/auth", authRoutes);
+// If you have notes routes, import and use them similarly
+app.use("/api/notes", notesRoutes);
 
 app.listen(3000, () => {
   console.log("Server is running on port 3000");
