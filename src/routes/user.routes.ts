@@ -1,0 +1,100 @@
+import express from "express";
+import type { Request, Response, NextFunction } from "express";
+import { verifyToken } from "../middleware/auth.middleware.js";
+import userController from "../controller/user.controller.js";
+import multer from "multer";
+
+const router = express.Router();
+
+// Configure multer for handling file uploads
+const storage = multer.memoryStorage();
+const upload = multer({
+  storage: storage,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB max file size
+  },
+  fileFilter: (
+    _req: Request,
+    file: Express.Multer.File,
+    cb: multer.FileFilterCallback
+  ) => {
+    console.log("Received file:", {
+      fieldname: file.fieldname,
+      mimetype: file.mimetype,
+      originalname: file.originalname,
+    });
+
+    if (!file.mimetype) {
+      console.log("No mimetype detected");
+      cb(new Error("File type not detected"));
+      return;
+    }
+
+    if (file.mimetype.startsWith("image/")) {
+      console.log("Valid image file received");
+      cb(null, true);
+    } else {
+      console.log("Invalid file type:", file.mimetype);
+      cb(
+        new Error(`Invalid file type. Expected image but got ${file.mimetype}`)
+      );
+    }
+  },
+});
+
+// Profile upload route
+router.post(
+  "/profile-picture",
+  verifyToken,
+  (req: Request, res: Response, next: NextFunction) => {
+    upload.single("image")(req, res, async (err: any) => {
+      try {
+        if (err instanceof multer.MulterError) {
+          console.error("Multer error:", err);
+          return res.status(400).json({
+            message: "File upload error",
+            error: err.message,
+          });
+        }
+
+        if (err) {
+          console.error("Upload error:", err);
+          return res.status(400).json({
+            message: "File upload failed",
+            error: err.message,
+          });
+        }
+
+        if (!req.file) {
+          return res.status(400).json({
+            message: "No file uploaded",
+          });
+        }
+
+        // Handle the file upload in the controller
+        await userController.uploadProfilePicture(req as any, res);
+      } catch (error) {
+        console.error("Profile picture upload error:", error);
+        res.status(500).json({
+          message: "Error uploading profile picture",
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    });
+  }
+);
+
+// Profile get route
+router.get("/profile", verifyToken, async (req: Request, res: Response) => {
+  try {
+    await userController.getProfile(req as any, res);
+  } catch (error) {
+    console.error("Profile fetch error:", error);
+    res.status(500).json({
+      message: "Error fetching profile",
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+});
+
+export default router;
