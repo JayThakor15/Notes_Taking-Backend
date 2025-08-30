@@ -62,8 +62,8 @@ const userController = {
                 width: 200,
                 height: 200,
                 crop: "fill",
-                gravity: "face"
-              }
+                gravity: "face",
+              },
             },
             (error, result) => {
               if (error) {
